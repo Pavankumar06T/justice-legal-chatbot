@@ -1,0 +1,42 @@
+{
+  "name": "justice-department-chatbot",
+  "version": "1.0.0",
+  "description": "AI-based Interactive Chatbot for Justice Department with voice recognition",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node uploads/server.js",
+    "dev": "nodemon uploads/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "multer": "^1.4.5-lts.1",
+    "@google/generative-ai": "^0.2.1",
+    "axios": "^1.5.0",
+    "uuid": "^9.0.0",
+    "socket.io": "^4.7.2",
+    "mongoose": "^8.0.3",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "helmet": "^7.1.0",
+    "express-validator": "^7.0.1",
+    "compression": "^1.7.4",
+    "express-rate-limit": "^7.1.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "ai",
+    "chatbot",
+    "justice",
+    "legal",
+    "gemini",
+    "voice"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
