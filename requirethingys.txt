@@ -1,0 +1,13 @@
+python:
+
+chromadb
+langchain.chat_models 
+langchain_chroma 
+langchain_google_genai 
+os
+Path
+dotenv 
+
+JS:
+
+
