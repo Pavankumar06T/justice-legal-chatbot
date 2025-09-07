@@ -1,24 +1,5 @@
-# Node
-node_modules/
-npm-debug.log*
-yarn.lock
-pnpm-lock.yaml
-
-# Logs
-*.log
-logs/
-error.log
-combined.log
-
-# Environment
+__pycache__/
+*.pyc
 .env
-.env.local
-
-# Uploads (optional)
-uploads/
-
-# OS
-.DS_Store
-Thumbs.db
-
-uploads/.env
+venv/
+.vscode/
