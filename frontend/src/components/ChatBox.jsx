@@ -1,26 +1,40 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import Sidebar from "./Sidebar";
+import ResourceModal from "./ResourceModal";
 import "./ChatBox.css";
 
-// Icons (you can use react-icons or SVG)
+// Custom Icons with Justice Theme
 const SendIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
-const BotIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L19 6H5L3 7V9L5 10V15C5 16.1 5.9 17 7 17V21H9V18H15V21H17V17C18.1 17 19 16.1 19 15V10L21 9ZM17 15C17 15.55 16.55 16 16 16H8C7.45 16 7 15.55 7 15V10H17V15Z" fill="currentColor"/>
+const GlobeIcon = () => (
+  <div style={{ marginRight: '8px' }}>
+    <svg width="24" height="24" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M2 12H22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M12 2C14.5013 4.73835 15.9228 8.29203 16 12C15.9228 15.708 14.5013 19.2616 12 22C9.49872 19.2616 8.07725 15.708 8 12C8.07725 8.29203 9.49872 4.73835 12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  </div>
+);
+
+const JusticeIcon = () => (
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M14 10V6L18 2L22 6V10H14Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M10 14V18L6 22L2 18V14H10Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M14 14H22V18L18 22L14 18V14Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M10 10H2V6L6 2L10 6V10Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
 const UserIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M20.5899 22C20.5899 18.13 16.7399 15 11.9999 15C7.25991 15 3.40991 18.13 3.40991 22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="8" r="5" stroke="currentColor" strokeWidth="1.5"/>
+    <path d="M20 19C20 16.2386 16.4183 14 12 14C7.58172 14 4 16.2386 4 19" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
   </svg>
 );
 
@@ -35,18 +49,48 @@ const initBotMsg = () => ({
 
 const createSession = () => ({
   session_id: Date.now().toString() + Math.random().toString(36).substring(2, 11),
-  label: "New Chat " + new Date().toLocaleTimeString(),
+  label: "New Chat",
   created: new Date()
 });
+
+// Indian languages with their codes and display names
+const INDIAN_LANGUAGES = [
+  { code: 'en', name: 'English', nativeName: 'English' },
+  { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी' },
+  { code: 'bn', name: 'Bengali', nativeName: 'বাংলা' },
+  { code: 'te', name: 'Telugu', nativeName: 'తెలుగు' },
+  { code: 'mr', name: 'Marathi', nativeName: 'मराठी' },
+  { code: 'ta', name: 'Tamil', nativeName: 'தமிழ்' },
+  { code: 'ur', name: 'Urdu', nativeName: 'اردو' },
+  { code: 'gu', name: 'Gujarati', nativeName: 'ગુજરાતી' },
+  { code: 'kn', name: 'Kannada', nativeName: 'ಕನ್ನಡ' },
+  { code: 'or', name: 'Odia', nativeName: 'ଓଡ଼ିଆ' },
+  { code: 'pa', name: 'Punjabi', nativeName: 'ਪੰਜਾਬੀ' },
+  { code: 'ml', name: 'Malayalam', nativeName: 'മലയാളം' },
+  { code: 'as', name: 'Assamese', nativeName: 'অসমীয়া' }
+];
 
 const ChatBox = () => {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([initBotMsg()]);
   const [loading, setLoading] = useState(false);
-  const [sessions, setSessions] = useState([createSession()]);
-  const [currentSessionId, setCurrentSessionId] = useState(sessions[0].session_id);
+  const [sessions, setSessions] = useState([]);
+  const [currentSessionId, setCurrentSessionId] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isDarkTheme, setIsDarkTheme] = useState(false);
+  const [activeResource, setActiveResource] = useState(null);
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+  const [suggestions, setSuggestions] = useState([
+    "What are my rights?",
+    "How do I file a complaint?",
+    "What legal documents do I need?",
+    "How to find a lawyer?"
+  ]);
+  
   const messagesEndRef = useRef(null);
-
+  const languageDropdownRef = useRef(null);
+  
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -56,37 +100,137 @@ const ChatBox = () => {
   }, [messages]);
 
   useEffect(() => {
-    setMessages([initBotMsg()]);
+    // Apply theme to body
+    if (isDarkTheme) {
+      document.body.setAttribute('data-theme', 'dark');
+    } else {
+      document.body.removeAttribute('data-theme');
+    }
+  }, [isDarkTheme]);
+
+  // Close language dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (languageDropdownRef.current && !languageDropdownRef.current.contains(event.target)) {
+        setShowLanguageDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Load sessions from backend on component mount
+  useEffect(() => {
+    const fetchSessions = async () => {
+      try {
+        const response = await axios.get(`${getApiUrl()}/sessions`);
+        const sessionsData = response.data;
+        
+        if (sessionsData.length > 0) {
+          setSessions(sessionsData);
+          setCurrentSessionId(sessionsData[0].session_id);
+        } else {
+          // Create a new session if none exist
+          handleNewChat();
+        }
+      } catch (error) {
+        console.error("Error fetching sessions:", error);
+        // Create a new session if API call fails
+        const newSession = createSession();
+        setSessions([newSession]);
+        setCurrentSessionId(newSession.session_id);
+      }
+    };
+    
+    fetchSessions();
+  }, []);
+
+  // Load messages for current session
+  useEffect(() => {
+    const fetchSessionHistory = async () => {
+      if (!currentSessionId) return;
+      
+      try {
+        const response = await axios.get(`${getApiUrl()}/sessions/${currentSessionId}/history`);
+        const sessionData = response.data;
+        
+        if (sessionData.history && sessionData.history.length > 0) {
+          // Convert history to message format
+          const historyMessages = sessionData.history.flatMap(item => [
+            { 
+              id: `${item.timestamp}-user`, 
+              sender: "user", 
+              text: item.user_message,
+              timestamp: new Date(item.timestamp),
+              language: item.language
+            },
+            { 
+              id: `${item.timestamp}-bot`, 
+              sender: "bot", 
+              text: item.bot_response,
+              timestamp: new Date(item.timestamp),
+              language: item.language
+            }
+          ]);
+          
+          setMessages(historyMessages);
+        } else {
+          setMessages([initBotMsg()]);
+        }
+      } catch (error) {
+        console.error("Error fetching session history:", error);
+        setMessages([initBotMsg()]);
+      }
+    };
+    
+    if (currentSessionId) {
+      fetchSessionHistory();
+    }
   }, [currentSessionId]);
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
+  const handleSend = async (message = null) => {
+    const messageText = message || input.trim();
+    if (!messageText) return;
     
     const userMsg = { 
       id: Date.now().toString(), 
       sender: "user", 
-      text: input,
-      timestamp: new Date()
+      text: messageText,
+      timestamp: new Date(),
+      language: selectedLanguage
     };
     
-    setMessages((msgs) => [...msgs, userMsg]);
+    // Update messages immediately for better UX
+    setMessages(prev => [...prev, userMsg]);
     setInput("");
     setLoading(true);
-
+    
     try {
       const response = await axios.post(
         `${getApiUrl()}/chat`,
-        { user_message: input, session_id: currentSessionId }
+        { 
+          user_message: messageText, 
+          session_id: currentSessionId,
+          language: selectedLanguage // Send selected language to backend
+        }
       );
       
       const botMsg = { 
         id: Date.now().toString(), 
         sender: "bot", 
         text: response.data.bot_response,
-        timestamp: new Date()
+        timestamp: new Date(),
+        language: selectedLanguage
       };
       
-      setMessages((msgs) => [...msgs, botMsg]);
+      setMessages(prev => [...prev, botMsg]);
+      
+      // Refresh sessions to update the labels
+      const sessionsResponse = await axios.get(`${getApiUrl()}/sessions`);
+      setSessions(sessionsResponse.data);
     } catch (err) {
       const errorMsg = { 
         id: Date.now().toString(), 
@@ -96,52 +240,210 @@ const ChatBox = () => {
         isError: true
       };
       
-      setMessages((msgs) => [...msgs, errorMsg]);
+      setMessages(prev => [...prev, errorMsg]);
     }
     setLoading(false);
   };
 
-  const handleSelectSession = (sid) => {
+  const handleSelectSession = async (sid) => {
     setCurrentSessionId(sid);
-    setMessages([initBotMsg()]);
+    setIsSidebarOpen(false);
   };
 
-  const handleNewChat = () => {
-    const newSession = createSession();
-    setSessions((s) => [...s, newSession]);
-    setCurrentSessionId(newSession.session_id);
-    setMessages([initBotMsg()]);
+  const handleNewChat = async () => {
+    try {
+      // Create a new session by sending a message
+      const response = await axios.post(
+        `${getApiUrl()}/chat`,
+        { user_message: "Hello", session_id: null, language: selectedLanguage }
+      );
+      
+      // Refresh sessions list
+      const sessionsResponse = await axios.get(`${getApiUrl()}/sessions`);
+      setSessions(sessionsResponse.data);
+      
+      // Set the new session as current (it will be the first one)
+      if (sessionsResponse.data.length > 0) {
+        setCurrentSessionId(sessionsResponse.data[0].session_id);
+      }
+    } catch (error) {
+      console.error("Error creating new chat:", error);
+      // Fallback: create a local session
+      const newSession = createSession();
+      setSessions(prev => [newSession, ...prev]);
+      setCurrentSessionId(newSession.session_id);
+      setMessages([initBotMsg()]);
+    }
+    setIsSidebarOpen(false);
+  };
+
+  const handleDeleteSession = async (sessionId, e) => {
+    e.stopPropagation(); // Prevent triggering the select session event
+    
+    if (sessions.length <= 1) {
+      // Don't allow deleting the last session
+      alert("You need to have at least one conversation.");
+      return;
+    }
+    
+    try {
+      await axios.delete(`${getApiUrl()}/sessions/${sessionId}`);
+      
+      // Refresh sessions list
+      const sessionsResponse = await axios.get(`${getApiUrl()}/sessions`);
+      setSessions(sessionsResponse.data);
+      
+      // If the deleted session was the current one, switch to the first session
+      if (sessionId === currentSessionId) {
+        setCurrentSessionId(sessionsResponse.data[0].session_id);
+      }
+    } catch (error) {
+      console.error("Error deleting session:", error);
+      alert("Failed to delete conversation. Please try again.");
+    }
+  };
+
+  const toggleTheme = () => {
+    setIsDarkTheme(!isDarkTheme);
+  };
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  const closeSidebar = () => {
+    setIsSidebarOpen(false);
+  };
+
+  const handleResourceClick = (resource) => {
+    setActiveResource(resource);
+    // Close sidebar on mobile
+    if (window.innerWidth < 968) {
+      setIsSidebarOpen(false);
+    }
+  };
+
+  const closeResourceModal = () => {
+    setActiveResource(null);
   };
 
   const formatTime = (date) => {
     return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const handleSuggestionClick = (suggestion) => {
+    handleSend(suggestion);
+  };
+
+  const handleLanguageSelect = (languageCode) => {
+    setSelectedLanguage(languageCode);
+    setShowLanguageDropdown(false);
+  };
+
+  const toggleLanguageDropdown = () => {
+    setShowLanguageDropdown(!showLanguageDropdown);
+  };
+
+  const getCurrentLanguage = () => {
+    return INDIAN_LANGUAGES.find(lang => lang.code === selectedLanguage) || INDIAN_LANGUAGES[0];
+  };
+
   return (
     <div className="chatbox-wrapper">
+      <div className={`sidebar-overlay ${isSidebarOpen ? 'active' : ''}`} 
+           onClick={closeSidebar}></div>
+      
       <Sidebar
         sessions={sessions}
         currentSession={currentSessionId}
         onSelectSession={handleSelectSession}
+        onDeleteSession={handleDeleteSession}
         onNewChat={handleNewChat}
+        isOpen={isSidebarOpen}
+        onClose={closeSidebar}
+        onResourceClick={handleResourceClick}
       />
       
       <div className="chatbox-container">
         <div className="chatbox-header">
+          <button className="menu-toggle" onClick={toggleSidebar}>
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+          
           <div className="chatbox-header-info">
-            <h2>Justice Department Assistant</h2>
-            <p>Ask me anything about justice department services and information</p>
+            <div className="header-icon">
+              <JusticeIcon />
+            </div>
+            <div>
+              <h2>Justice Assistant</h2>
+              <p>Your guide to legal information & resources</p>
+            </div>
           </div>
+          
           <div className="chatbox-header-actions">
-            <button className="header-btn">⋮</button>
+            <div className="language-selector-container">
+              <button 
+                className="header-btn language-toggle" 
+                onClick={toggleLanguageDropdown}
+                title="Select language"
+              >
+                <GlobeIcon />
+                <span>{getCurrentLanguage().code.toUpperCase()}</span>
+              </button>
+              
+              {showLanguageDropdown && (
+                <div className="language-dropdown" ref={languageDropdownRef}>
+                  <div className="language-dropdown-header">
+                    <span>Select Language</span>
+                  </div>
+                  <div className="language-list">
+                    {INDIAN_LANGUAGES.map((language) => (
+                      <div
+                        key={language.code}
+                        className={`language-option ${selectedLanguage === language.code ? 'selected' : ''}`}
+                        onClick={() => handleLanguageSelect(language.code)}
+                      >
+                        <span className="language-name">{language.name}</span>
+                        <span className="language-native">{language.nativeName}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <button className="header-btn theme-toggle" onClick={toggleTheme}>
+              {isDarkTheme ? '☀️' : '🌙'}
+            </button>
           </div>
         </div>
         
         <div className="chatbox-messages">
+          {messages.length <= 1 && (
+            <div className="welcome-message">
+              <div className="welcome-icon">⚖️</div>
+              <h3>Justice Department Assistant</h3>
+              <p>Ask me about legal procedures, rights, or department services</p>
+              <div className="suggestions-container">
+                {suggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    className="suggestion-bubble"
+                    onClick={() => handleSuggestionClick(suggestion)}
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          
           {messages.map((msg) => (
             <div key={msg.id} className={`chatbox-message-row ${msg.sender}`}>
               <div className="chatbox-message-avatar">
-                {msg.sender === "user" ? <UserIcon /> : <BotIcon />}
+                {msg.sender === "user" ? <UserIcon /> : <JusticeIcon />}
               </div>
               <div className={`chatbox-message-content ${msg.sender}`}>
                 <div className="chatbox-message-bubble">
@@ -162,7 +464,7 @@ const ChatBox = () => {
           {loading && (
             <div className="chatbox-message-row bot">
               <div className="chatbox-message-avatar">
-                <BotIcon />
+                <JusticeIcon />
               </div>
               <div className="chatbox-message-content bot">
                 <div className="chatbox-message-bubble typing-indicator">
@@ -179,6 +481,9 @@ const ChatBox = () => {
         
         <div className="chatbox-input-container">
           <div className="chatbox-input-row">
+            <div className="language-input-hint">
+              <span>{getCurrentLanguage().nativeName}</span>
+            </div>
             <input
               type="text"
               value={input}
@@ -186,21 +491,34 @@ const ChatBox = () => {
               onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) handleSend(); }}
               className="chatbox-input"
               disabled={loading}
-              placeholder="Type your message..."
+              placeholder="Ask about legal information..."
             />
             <button 
-              onClick={handleSend} 
+              className="chatbox-language-btn"
+              onClick={toggleLanguageDropdown}
+              title="Change language"
+            >
+              <GlobeIcon />
+            </button>
+            <button 
+              onClick={() => handleSend()} 
               disabled={loading || !input.trim()} 
               className="chatbox-send-btn"
+              aria-label="Send message"
             >
               <SendIcon />
             </button>
           </div>
           <div className="chatbox-input-hint">
-            Press Enter to send • Shift+Enter for new line
+            Try asking: "What are my rights?" or "How do I file a complaint?"
           </div>
         </div>
       </div>
+
+      <ResourceModal 
+        resourceType={activeResource} 
+        onClose={closeResourceModal} 
+      />
     </div>
   );
 };
