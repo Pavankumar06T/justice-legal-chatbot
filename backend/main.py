@@ -1,14 +1,16 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+
 from langchain.chat_models import init_chat_model
 from langchain_chroma import Chroma
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
+
 from pathlib import Path
 from pydantic import BaseModel
 from dotenv import load_dotenv
 import logging
 import asyncio
-import os
+
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
@@ -45,19 +47,20 @@ async def get_db():
 
 
 #---- RAG constants ----#
-PERSIST_DIR = "C:/Users/GunaPawan/Downloads/Justice_Chatbot/chroma_store"
+PERSIST_DIR = "../chroma_store"
 
+
+    
 #--- Initialize LLM and embeddings (keep synchronous if needed) ---#
 llm = init_chat_model("gemini-2.5-flash", model_provider="google_genai")
-embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-
+embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 # Initialize vector DB (blocking here, move to async if supported)
 if Path(PERSIST_DIR).exists() and any(Path(PERSIST_DIR).iterdir()):
     vectordb = Chroma(persist_directory=PERSIST_DIR, embedding_function=embeddings)
 else:
     raise RuntimeError(f"Vector DB persist directory '{PERSIST_DIR}' missing or empty.")
 
-retriever = vectordb.as_retriever(k=10)
+retriever = vectordb.as_retriever(search_kwargs={"k": 3})
 
 
 #---- Helper Functions ----#
@@ -77,25 +80,22 @@ Context:
 Question:
 {question}
 """
+    print(prompt)
     resp = llm.invoke(prompt)
+    print("something else works")
     return resp.content
 
 
-async def RAG(q: str):
+def RAG(q: str):
+    
+    
     try:
-        qr_prompt = f"Rewrite the following question into a retrieval query ONLY GIVE THE SENTENCE:\n{q}"
-        qr = llm.invoke(qr_prompt).content
-    except Exception as e:
-        logging.error(f"Error calling Gemini query rewrite: {e}")
-        return None
-
-    try:
-        results = retriever.get_relevant_documents(qr)
+        results = retriever.get_relevant_documents(q)
         snippets = [d.page_content for d in results]
     except Exception as e:
         logging.error(f"Error retrieving documents: {e}")
         return None
-
+    print("this also works")
     try:
         ans = ask_gemini(q, snippets)
         return ans
@@ -175,7 +175,7 @@ async def chat_endpoint(input_data: ChatInput, db: AsyncSession = Depends(get_db
     history_query = await db.execute(
         text(
             "SELECT user_message, bot_response FROM chat_history "
-            "WHERE session_id = :sid ORDER BY timestamp DESC LIMIT 5"
+            "WHERE session_id = :sid ORDER BY timestamp DESC LIMIT 2"
         ),
         {"sid": session_id},
     )
@@ -184,7 +184,8 @@ async def chat_endpoint(input_data: ChatInput, db: AsyncSession = Depends(get_db
     history = rows[::-1] if rows else []
 
     # For simplicity just send user message to RAG for now
-    response_text = await RAG(user_message)
+    
+    response_text = RAG(user_message )
 
     if response_text is None:
         raise HTTPException(status_code=500, detail="Failed to generate response")
