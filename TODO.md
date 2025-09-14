@@ -5,3 +5,4 @@
 - [ ] Confirm root GET endpoint returns a simple message.
 - [ ] Validate environment variable usage for API key.
 - [ ] Provide instructions for running the backend.
+- [ ] To Make less embedding calls 
