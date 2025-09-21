@@ -129,19 +129,19 @@ const ChatBox = () => {
         const response = await axios.get(`${getApiUrl()}/sessions`);
         const sessionsData = response.data;
         
+        setSessions(sessionsData);
+        
+        // Don't automatically select the first session
+        // Instead, show the welcome screen
         if (sessionsData.length > 0) {
-          setSessions(sessionsData);
-          setCurrentSessionId(sessionsData[0].session_id);
+          setCurrentSessionId(null); // This will show welcome screen
         } else {
           // Create a new session if none exist
           handleNewChat();
         }
       } catch (error) {
         console.error("Error fetching sessions:", error);
-        // Create a new session if API call fails
-        const newSession = createSession();
-        setSessions([newSession]);
-        setCurrentSessionId(newSession.session_id);
+        setCurrentSessionId(null); // Show welcome screen on error
       }
     };
     
@@ -151,7 +151,11 @@ const ChatBox = () => {
   // Load messages for current session
   useEffect(() => {
     const fetchSessionHistory = async () => {
-      if (!currentSessionId) return;
+      if (!currentSessionId) {
+        // Show welcome screen when no session is selected
+        setMessages([initBotMsg()]);
+        return;
+      }
       
       try {
         const response = await axios.get(`${getApiUrl()}/sessions/${currentSessionId}/history`);
@@ -231,6 +235,11 @@ const ChatBox = () => {
       // Refresh sessions to update the labels
       const sessionsResponse = await axios.get(`${getApiUrl()}/sessions`);
       setSessions(sessionsResponse.data);
+      
+      // Set current session ID if it wasn't set before
+      if (!currentSessionId) {
+        setCurrentSessionId(response.data.session_id);
+      }
     } catch (err) {
       const errorMsg = { 
         id: Date.now().toString(), 
@@ -252,20 +261,23 @@ const ChatBox = () => {
 
   const handleNewChat = async () => {
     try {
-      // Create a new session by sending a message
+      // Use the /new_chat endpoint to create a session without sending a message
       const response = await axios.post(
         `${getApiUrl()}/chat`,
-        { user_message: "Hello", session_id: null, language: selectedLanguage }
+        { 
+          user_message: "/new_chat", 
+          session_id: null, 
+          language: selectedLanguage 
+        }
       );
       
       // Refresh sessions list
       const sessionsResponse = await axios.get(`${getApiUrl()}/sessions`);
       setSessions(sessionsResponse.data);
       
-      // Set the new session as current (it will be the first one)
-      if (sessionsResponse.data.length > 0) {
-        setCurrentSessionId(sessionsResponse.data[0].session_id);
-      }
+      // Set the new session as current
+      setCurrentSessionId(response.data.session_id);
+      setMessages([initBotMsg()]); // Reset to welcome message
     } catch (error) {
       console.error("Error creating new chat:", error);
       // Fallback: create a local session
@@ -286,6 +298,10 @@ const ChatBox = () => {
       return;
     }
     
+    if (!window.confirm("Are you sure you want to delete this conversation?")) {
+      return;
+    }
+    
     try {
       await axios.delete(`${getApiUrl()}/sessions/${sessionId}`);
       
@@ -293,9 +309,10 @@ const ChatBox = () => {
       const sessionsResponse = await axios.get(`${getApiUrl()}/sessions`);
       setSessions(sessionsResponse.data);
       
-      // If the deleted session was the current one, switch to the first session
+      // If the deleted session was the current one, switch to welcome screen
       if (sessionId === currentSessionId) {
-        setCurrentSessionId(sessionsResponse.data[0].session_id);
+        setCurrentSessionId(null);
+        setMessages([initBotMsg()]);
       }
     } catch (error) {
       console.error("Error deleting session:", error);
@@ -346,6 +363,11 @@ const ChatBox = () => {
 
   const getCurrentLanguage = () => {
     return INDIAN_LANGUAGES.find(lang => lang.code === selectedLanguage) || INDIAN_LANGUAGES[0];
+  };
+
+  // Function to render HTML content safely
+  const createMarkup = (htmlContent) => {
+    return { __html: htmlContent };
   };
 
   return (
@@ -421,7 +443,7 @@ const ChatBox = () => {
         </div>
         
         <div className="chatbox-messages">
-          {messages.length <= 1 && (
+          {(!currentSessionId || messages.length <= 1) && (
             <div className="welcome-message">
               <div className="welcome-icon">⚖️</div>
               <h3>Justice Department Assistant</h3>
@@ -447,7 +469,9 @@ const ChatBox = () => {
               </div>
               <div className={`chatbox-message-content ${msg.sender}`}>
                 <div className="chatbox-message-bubble">
-                  <span className="chatbox-message-text">{msg.text}</span>
+                  <div className="chatbox-message-text" dangerouslySetInnerHTML={createMarkup(
+                    msg.text.split("\n").map(line => line.trim() ? line : '<br/>').join('')
+                  )} />
                   <span className="chatbox-message-time">
                     {formatTime(msg.timestamp)}
                   </span>
