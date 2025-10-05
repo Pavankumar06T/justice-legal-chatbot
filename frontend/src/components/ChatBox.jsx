@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
+import api from "../api";
+import { useAuth } from "../AuthContext";
 import Sidebar from "./Sidebar";
 import ResourceModal from "./ResourceModal";
 import "./ChatBox.css";
@@ -71,6 +72,7 @@ const INDIAN_LANGUAGES = [
 ];
 
 const ChatBox = () => {
+  const { logout } = useAuth();
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([initBotMsg()]);
   const [loading, setLoading] = useState(false);
@@ -126,7 +128,7 @@ const ChatBox = () => {
   useEffect(() => {
     const fetchSessions = async () => {
       try {
-        const response = await axios.get(`${getApiUrl()}/sessions`);
+        const response = await api.get(`/sessions`);
         const sessionsData = response.data;
         
         setSessions(sessionsData);
@@ -158,7 +160,7 @@ const ChatBox = () => {
       }
       
       try {
-        const response = await axios.get(`${getApiUrl()}/sessions/${currentSessionId}/history`);
+        const response = await api.get(`${getApiUrl()}/sessions/${currentSessionId}/history`);
         const sessionData = response.data;
         
         if (sessionData.history && sessionData.history.length > 0) {
@@ -213,7 +215,7 @@ const ChatBox = () => {
     setLoading(true);
     
     try {
-      const response = await axios.post(
+      const response = await api.post(
         `${getApiUrl()}/chat`,
         { 
           user_message: messageText, 
@@ -233,7 +235,7 @@ const ChatBox = () => {
       setMessages(prev => [...prev, botMsg]);
       
       // Refresh sessions to update the labels
-      const sessionsResponse = await axios.get(`${getApiUrl()}/sessions`);
+      const sessionsResponse = await api.get(`${getApiUrl()}/sessions`);
       setSessions(sessionsResponse.data);
       
       // Set current session ID if it wasn't set before
@@ -262,7 +264,7 @@ const ChatBox = () => {
   const handleNewChat = async () => {
     try {
       // Use the /new_chat endpoint to create a session without sending a message
-      const response = await axios.post(
+      const response = await api.post(
         `${getApiUrl()}/chat`,
         { 
           user_message: "/new_chat", 
@@ -272,7 +274,7 @@ const ChatBox = () => {
       );
       
       // Refresh sessions list
-      const sessionsResponse = await axios.get(`${getApiUrl()}/sessions`);
+      const sessionsResponse = await api.get(`${getApiUrl()}/sessions`);
       setSessions(sessionsResponse.data);
       
       // Set the new session as current
@@ -303,10 +305,10 @@ const ChatBox = () => {
     }
     
     try {
-      await axios.delete(`${getApiUrl()}/sessions/${sessionId}`);
+      await api.delete(`${getApiUrl()}/sessions/${sessionId}`);
       
       // Refresh sessions list
-      const sessionsResponse = await axios.get(`${getApiUrl()}/sessions`);
+      const sessionsResponse = await api.get(`${getApiUrl()}/sessions`);
       setSessions(sessionsResponse.data);
       
       // If the deleted session was the current one, switch to welcome screen
@@ -369,6 +371,10 @@ const ChatBox = () => {
   const createMarkup = (htmlContent) => {
     return { __html: htmlContent };
   };
+   
+  const handleLogout = () => {
+        logout(); // This will clear the token and the ProtectedRoute will redirect
+  };
 
   return (
     <div className="chatbox-wrapper">
@@ -384,6 +390,7 @@ const ChatBox = () => {
         isOpen={isSidebarOpen}
         onClose={closeSidebar}
         onResourceClick={handleResourceClick}
+        onLogout={handleLogout}
       />
       
       <div className="chatbox-container">
