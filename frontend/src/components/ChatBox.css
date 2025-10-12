@@ -1496,3 +1496,547 @@ body {
 .logout-btn:active {
   transform: scale(0.98); /* A subtle press-down effect */
 }
+
+/* --- Sidebar Layout Improvements --- */
+
+/* Ensures the sidebar itself is full height and uses flex for internal layout */
+.sidebar {
+    /* Existing styles... */
+    display: flex;
+    flex-direction: column; /* Stack children vertically */
+    height: 100%;
+    /* New: Give it a high z-index for mobile overlay */
+    z-index: 1000;
+}
+
+.sidebar-header {
+    /* Existing styles... */
+    padding: 20px 15px;
+    /* New: Ensure fixed height and separation */
+    border-bottom: 1px solid var(--border-color);
+}
+
+.new-chat-btn {
+    /* Existing styles... */
+    margin: 15px;
+    padding: 12px;
+}
+
+.sidebar-search {
+    /* Existing styles... */
+    margin: 0 15px 15px 15px;
+}
+
+/* This is the key change: it takes up all available space and is scrollable */
+.sidebar-scrollable-content {
+    flex-grow: 1; /* Takes all remaining vertical space */
+    overflow-y: auto; /* Enables scrolling for the chat list and resources */
+    padding: 0 15px; /* Add padding to match other sections */
+    /* Custom scrollbar styling for better look */
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-color) var(--background-color);
+}
+
+.sidebar-list {
+    margin-bottom: 20px; /* Space before resources */
+    padding-right: 5px; /* Account for scrollbar space */
+}
+
+/* Make sure the resource and footer sections are static at the bottom */
+.legal-resources, .sidebar-footer {
+    padding: 15px;
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0; /* Prevents them from shrinking when content grows */
+}
+
+/* --- Logout Button Styling --- */
+.sidebar-footer {
+    padding: 15px;
+    /* Ensure the existing styling is applied or add one if missing */
+}
+
+.logout-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 15px;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    color: var(--text-color);
+    font-size: 15px;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.logout-btn:hover {
+    background-color: var(--hover-color); /* A light hover background */
+    color: var(--primary-color-hover);
+}
+
+.logout-btn svg {
+    color: var(--accent-color); /* Set a color for the icon */
+}
+
+/* --- Resource Links Styling (Moved from bottom to scrollable content) --- */
+.legal-resources {
+    border-top: none; /* Removed redundant line if it's inside scrollable */
+    margin-top: 10px;
+    padding-bottom: 10px; /* Reduce padding since it's inside the scrollable area */
+}
+
+.legal-resources h4 {
+    color: var(--text-color-light);
+    font-size: 14px;
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+.resource-link {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+    font-size: 15px;
+    color: var(--text-color);
+}
+
+.resource-link:hover {
+    background-color: var(--hover-color);
+}
+
+.resource-link span:first-child, .resource-link svg {
+    margin-right: 12px;
+    min-width: 20px;
+    text-align: center;
+    color: var(--accent-color);
+}
+
+/* --- Sidebar Layout Improvements --- */
+
+/* Ensures the sidebar itself is full height and uses flex for internal layout */
+.sidebar {
+    /* Existing styles... */
+    display: flex;
+    flex-direction: column; /* Stack children vertically */
+    height: 100%;
+    /* New: Give it a high z-index for mobile overlay */
+    z-index: 1000;
+}
+
+.sidebar-header {
+    /* Existing styles... */
+    padding: 20px 15px;
+    /* New: Ensure fixed height and separation */
+    border-bottom: 1px solid var(--border-color);
+}
+
+.new-chat-btn {
+    /* Existing styles... */
+    margin: 15px;
+    padding: 12px;
+}
+
+.sidebar-search {
+    /* Existing styles... */
+    margin: 0 15px 15px 15px;
+}
+
+/* This is the key change: it takes up all available space and is scrollable */
+.sidebar-scrollable-content {
+    flex-grow: 1; /* Takes all remaining vertical space */
+    overflow-y: auto; /* Enables scrolling for the chat list and resources */
+    padding: 0 15px; /* Add padding to match other sections */
+    /* Custom scrollbar styling for better look */
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-color) var(--background-color);
+}
+
+.sidebar-list {
+    margin-bottom: 20px; /* Space before resources */
+    padding-right: 5px; /* Account for scrollbar space */
+}
+
+/* Make sure the resource and footer sections are static at the bottom */
+.legal-resources, .sidebar-footer {
+    padding: 15px;
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0; /* Prevents them from shrinking when content grows */
+}
+
+/* --- Logout Button Styling --- */
+.sidebar-footer {
+    padding: 15px;
+    /* Ensure the existing styling is applied or add one if missing */
+}
+
+.logout-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 15px;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    color: var(--text-color);
+    font-size: 15px;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.logout-btn:hover {
+    background-color: var(--hover-color); /* A light hover background */
+    color: var(--primary-color-hover);
+}
+
+.logout-btn svg {
+    color: var(--accent-color); /* Set a color for the icon */
+}
+
+/* --- Resource Links Styling (Moved from bottom to scrollable content) --- */
+.legal-resources {
+    border-top: none; /* Removed redundant line if it's inside scrollable */
+    margin-top: 10px;
+    padding-bottom: 10px; /* Reduce padding since it's inside the scrollable area */
+}
+
+.legal-resources h4 {
+    color: var(--text-color-light);
+    font-size: 14px;
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+.resource-link {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+    font-size: 15px;
+    color: var(--text-color);
+}
+
+.resource-link:hover {
+    background-color: var(--hover-color);
+}
+
+.resource-link span:first-child, .resource-link svg {
+    margin-right: 12px;
+    min-width: 20px;
+    text-align: center;
+    color: var(--accent-color);
+}
+
+/* Add these to your existing ChatBox.css */
+
+/* Error banners */
+.error-banner {
+  background: var(--error-color);
+  color: white;
+  padding: 1rem;
+  margin: 1rem;
+  border-radius: var(--border-radius);
+  display: flex;
+  justify-content: between;
+  align-items: center;
+  animation: slideDown 0.3s ease;
+}
+
+.error-banner.network {
+  background: var(--warning-color);
+}
+
+.error-banner button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 0.5rem;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Skeleton loading */
+.skeleton-message {
+  padding: 0.5rem 0;
+}
+
+.skeleton-line {
+  height: 1rem;
+  margin-bottom: 0.5rem;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--surface-color) 25%, var(--border-color) 50%, var(--surface-color) 75%);
+  background-size: 200% 100%;
+  animation: pulse 2s infinite;
+}
+
+.skeleton-line.short {
+  width: 60%;
+}
+
+.skeleton-line.medium {
+  width: 80%;
+}
+
+.skeleton-line.long {
+  width: 95%;
+}
+
+/* Enhanced mobile responsiveness */
+@media (max-width: 768px) {
+  .chatbox-container {
+    padding: 0.5rem;
+  }
+  
+  .suggestions-container {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .suggestion-bubble {
+    width: 100%;
+    text-align: left;
+  }
+  
+  .chatbox-header-actions {
+    gap: 0.5rem;
+  }
+  
+  .language-dropdown {
+    right: 0;
+    left: auto;
+    transform: none;
+  }
+}
+
+/* Improved focus styles */
+.chatbox-input:focus-visible,
+.chatbox-send-btn:focus-visible,
+.suggestion-bubble:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+  .chatbox-header,
+  .chatbox-input-container {
+    display: none;
+  }
+  
+  .chatbox-messages {
+    height: auto !important;
+  }
+}
+
+/* Error banners */
+.error-banner {
+  background: var(--error-color);
+  color: white;
+  padding: 1rem;
+  margin: 0 1rem;
+  border-radius: var(--border-radius);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  animation: slideDown 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.error-banner.network {
+  background: var(--warning-color);
+}
+
+.error-banner.auth {
+  background: var(--error-color);
+}
+
+.error-banner.server {
+  background: var(--warning-color);
+}
+
+.error-banner.warning {
+  background: #ff9800;
+}
+
+.error-banner button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 0.5rem;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.error-banner button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Skeleton loading */
+.skeleton-message {
+  padding: 0.5rem 0;
+}
+
+.skeleton-line {
+  height: 1rem;
+  margin-bottom: 0.5rem;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--surface-color) 25%, var(--border-color) 50%, var(--surface-color) 75%);
+  background-size: 200% 100%;
+  animation: pulse 2s infinite;
+}
+
+.skeleton-line.short {
+  width: 60%;
+}
+
+.skeleton-line.medium {
+  width: 80%;
+}
+
+.skeleton-line.long {
+  width: 95%;
+}
+
+@keyframes pulse {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Enhanced mobile responsiveness */
+@media (max-width: 768px) {
+  .chatbox-container {
+    padding: 0.5rem;
+  }
+  
+  .suggestions-container {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .suggestion-bubble {
+    width: 100%;
+    text-align: left;
+    padding: 0.75rem 1rem;
+  }
+  
+  .chatbox-header-actions {
+    gap: 0.5rem;
+  }
+  
+  .language-dropdown {
+    right: 0;
+    left: auto;
+    transform: none;
+    width: 280px;
+  }
+  
+  .error-banner {
+    margin: 0 0.5rem;
+    padding: 0.75rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* Improved focus styles */
+.chatbox-input:focus-visible,
+.chatbox-send-btn:focus-visible,
+.suggestion-bubble:focus-visible,
+.header-btn:focus-visible,
+.menu-toggle:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+  .chatbox-header,
+  .chatbox-input-container,
+  .error-banner {
+    display: none;
+  }
+  
+  .chatbox-messages {
+    height: auto !important;
+  }
+  
+  .chatbox-message-bubble {
+    break-inside: avoid;
+  }
+}
+
+/* High contrast support */
+@media (prefers-contrast: high) {
+  .chatbox-message-bubble {
+    border: 2px solid var(--border-color);
+  }
+  
+  .suggestion-bubble {
+    border: 2px solid var(--primary-color);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .error-banner {
+    animation: none;
+  }
+  
+  .skeleton-line {
+    animation: none;
+  }
+  
+  .chatbox-message-bubble {
+    transition: none;
+  }
+}
+
+/* Offline state styling */
+.chatbox-input:disabled {
+  background-color: var(--surface-color);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.chatbox-send-btn:disabled:not(.loading) {
+  background-color: var(--text-muted);
+  cursor: not-allowed;
+}

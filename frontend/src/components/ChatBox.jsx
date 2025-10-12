@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import api from "../api";
 import { useAuth } from "../AuthContext";
 import Sidebar from "./Sidebar";
@@ -39,22 +39,7 @@ const UserIcon = () => (
   </svg>
 );
 
-const getApiUrl = () => process.env.REACT_APP_API_URL || "http://localhost:8000";
-
-const initBotMsg = () => ({
-  id: Date.now().toString(),
-  sender: "bot",
-  text: "Hello! I'm your Justice Department assistant. How can I help you today?",
-  timestamp: new Date()
-});
-
-const createSession = () => ({
-  session_id: Date.now().toString() + Math.random().toString(36).substring(2, 11),
-  label: "New Chat",
-  created: new Date()
-});
-
-// Indian languages with their codes and display names
+// Constants
 const INDIAN_LANGUAGES = [
   { code: 'en', name: 'English', nativeName: 'English' },
   { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी' },
@@ -71,6 +56,32 @@ const INDIAN_LANGUAGES = [
   { code: 'as', name: 'Assamese', nativeName: 'অসমীয়া' }
 ];
 
+const SUGGESTIONS = [
+  "What are my rights?",
+  "How do I file a complaint?",
+  "What legal documents do I need?",
+  "How to find a lawyer?",
+  "Explain consumer protection laws",
+  "What is the process for property registration?",
+  "How to write a legal notice?",
+  "What are my employment rights?"
+];
+
+const getApiUrl = () => process.env.REACT_APP_API_URL || "http://localhost:8000";
+
+const initBotMsg = () => ({
+  id: Date.now().toString(),
+  sender: "bot",
+  text: "Hello! I'm your Justice Department assistant. How can I help you today?",
+  timestamp: new Date()
+});
+
+const createSession = () => ({
+  session_id: Date.now().toString() + Math.random().toString(36).substring(2, 11),
+  label: "New Chat",
+  created: new Date()
+});
+
 const ChatBox = () => {
   const { logout } = useAuth();
   const [input, setInput] = useState("");
@@ -83,12 +94,9 @@ const ChatBox = () => {
   const [activeResource, setActiveResource] = useState(null);
   const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
-  const [suggestions, setSuggestions] = useState([
-    "What are my rights?",
-    "How do I file a complaint?",
-    "What legal documents do I need?",
-    "How to find a lawyer?"
-  ]);
+  const [suggestions] = useState(SUGGESTIONS);
+  const [error, setError] = useState({ type: '', message: '' });
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   
   const messagesEndRef = useRef(null);
   const languageDropdownRef = useRef(null);
@@ -109,6 +117,29 @@ const ChatBox = () => {
       document.body.removeAttribute('data-theme');
     }
   }, [isDarkTheme]);
+
+  // Network status monitoring
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      if (error.type === 'network') {
+        setError({ type: '', message: '' });
+      }
+    };
+    
+    const handleOffline = () => {
+      setIsOnline(false);
+      setError({ type: 'network', message: 'You are offline. Some features may not work.' });
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [error.type]);
 
   // Close language dropdown when clicking outside
   useEffect(() => {
@@ -133,38 +164,41 @@ const ChatBox = () => {
         
         setSessions(sessionsData);
         
-        // Don't automatically select the first session
-        // Instead, show the welcome screen
         if (sessionsData.length > 0) {
-          setCurrentSessionId(null); // This will show welcome screen
+          setCurrentSessionId(null); 
         } else {
-          // Create a new session if none exist
           handleNewChat();
         }
       } catch (error) {
         console.error("Error fetching sessions:", error);
-        setCurrentSessionId(null); // Show welcome screen on error
+        if (error.response?.status === 401) {
+          setError({ type: 'auth', message: 'Session expired. Please refresh the page.' });
+        } else if (!isOnline) {
+          setError({ type: 'network', message: 'Cannot load sessions while offline.' });
+        } else {
+          setError({ type: 'server', message: 'Failed to load conversations.' });
+        }
+        setCurrentSessionId(null);
       }
     };
     
     fetchSessions();
-  }, []);
+  }, [isOnline]);
 
   // Load messages for current session
   useEffect(() => {
     const fetchSessionHistory = async () => {
       if (!currentSessionId) {
-        // Show welcome screen when no session is selected
         setMessages([initBotMsg()]);
         return;
       }
       
       try {
+        setLoading(true);
         const response = await api.get(`${getApiUrl()}/sessions/${currentSessionId}/history`);
         const sessionData = response.data;
         
         if (sessionData.history && sessionData.history.length > 0) {
-          // Convert history to message format
           const historyMessages = sessionData.history.flatMap(item => [
             { 
               id: `${item.timestamp}-user`, 
@@ -188,19 +222,31 @@ const ChatBox = () => {
         }
       } catch (error) {
         console.error("Error fetching session history:", error);
+        if (error.response?.status === 401) {
+          setError({ type: 'auth', message: 'Session expired. Please refresh the page.' });
+        } else {
+          setError({ type: 'server', message: 'Failed to load chat history.' });
+        }
         setMessages([initBotMsg()]);
+      } finally {
+        setLoading(false);
       }
     };
     
-    if (currentSessionId) {
+    if (currentSessionId !== undefined) {
       fetchSessionHistory();
     }
   }, [currentSessionId]);
 
-  const handleSend = async (message = null) => {
+  const handleSend = useCallback(async (message = null) => {
     const messageText = message || input.trim();
     if (!messageText) return;
     
+    if (!isOnline) {
+      setError({ type: 'network', message: 'Cannot send messages while offline' });
+      return;
+    }
+
     const userMsg = { 
       id: Date.now().toString(), 
       sender: "user", 
@@ -209,23 +255,30 @@ const ChatBox = () => {
       language: selectedLanguage
     };
     
-    // Update messages immediately for better UX
     setMessages(prev => [...prev, userMsg]);
     setInput("");
     setLoading(true);
+    setError({ type: '', message: '' });
     
+    let sessionIdToSend = currentSessionId;
+    
+    if (!currentSessionId) {
+      sessionIdToSend = null; 
+    }
+
     try {
       const response = await api.post(
         `${getApiUrl()}/chat`,
         { 
           user_message: messageText, 
-          session_id: currentSessionId,
-          language: selectedLanguage // Send selected language to backend
-        }
+          session_id: sessionIdToSend,
+          language: selectedLanguage
+        },
+        { timeout: 30000 }
       );
       
       const botMsg = { 
-        id: Date.now().toString(), 
+        id: Date.now().toString() + '-bot',
         sender: "bot", 
         text: response.data.bot_response,
         timestamp: new Date(),
@@ -234,19 +287,33 @@ const ChatBox = () => {
       
       setMessages(prev => [...prev, botMsg]);
       
-      // Refresh sessions to update the labels
       const sessionsResponse = await api.get(`${getApiUrl()}/sessions`);
       setSessions(sessionsResponse.data);
       
-      // Set current session ID if it wasn't set before
       if (!currentSessionId) {
         setCurrentSessionId(response.data.session_id);
       }
     } catch (err) {
+      console.error("Chat error:", err);
+      
+      let errorMessage = "Sorry, I'm experiencing connection issues. Please try again in a moment.";
+      
+      if (err.code === 'NETWORK_ERROR' || err.message?.includes('Network Error')) {
+        errorMessage = "Network error. Please check your connection and try again.";
+        setError({ type: 'network', message: errorMessage });
+      } else if (err.response?.status >= 500) {
+        errorMessage = "Server is temporarily unavailable. Please try again later.";
+      } else if (err.response?.status === 401) {
+        errorMessage = "Session expired. Please refresh the page.";
+        setError({ type: 'auth', message: errorMessage });
+      } else if (err.code === 'ECONNABORTED') {
+        errorMessage = "Request timeout. Please try again.";
+      }
+      
       const errorMsg = { 
-        id: Date.now().toString(), 
+        id: Date.now().toString() + '-error', 
         sender: "bot", 
-        text: "Sorry, I'm experiencing connection issues. Please try again in a moment.",
+        text: errorMessage,
         timestamp: new Date(),
         isError: true
       };
@@ -254,49 +321,51 @@ const ChatBox = () => {
       setMessages(prev => [...prev, errorMsg]);
     }
     setLoading(false);
-  };
+  }, [input, isOnline, currentSessionId, selectedLanguage]);
 
-  const handleSelectSession = async (sid) => {
+  const handleSelectSession = useCallback(async (sid) => {
     setCurrentSessionId(sid);
     setIsSidebarOpen(false);
-  };
+    setError({ type: '', message: '' });
+  }, []);
 
-  const handleNewChat = async () => {
+  const handleNewChat = useCallback(async () => {
     try {
-      // Use the /new_chat endpoint to create a session without sending a message
       const response = await api.post(
         `${getApiUrl()}/chat`,
         { 
-          user_message: "/new_chat", 
-          session_id: null, 
+          user_message: initBotMsg().text,
+          session_id: null,
           language: selectedLanguage 
         }
       );
       
-      // Refresh sessions list
       const sessionsResponse = await api.get(`${getApiUrl()}/sessions`);
       setSessions(sessionsResponse.data);
       
-      // Set the new session as current
       setCurrentSessionId(response.data.session_id);
-      setMessages([initBotMsg()]); // Reset to welcome message
+      setMessages([initBotMsg()]);
     } catch (error) {
       console.error("Error creating new chat:", error);
-      // Fallback: create a local session
       const newSession = createSession();
       setSessions(prev => [newSession, ...prev]);
       setCurrentSessionId(newSession.session_id);
       setMessages([initBotMsg()]);
+      
+      if (error.response?.status === 401) {
+        setError({ type: 'auth', message: 'Session expired. Please refresh the page.' });
+      } else {
+        setError({ type: 'server', message: 'Failed to create new chat. Starting local session.' });
+      }
     }
     setIsSidebarOpen(false);
-  };
+  }, [selectedLanguage]);
 
-  const handleDeleteSession = async (sessionId, e) => {
-    e.stopPropagation(); // Prevent triggering the select session event
+  const handleDeleteSession = useCallback(async (sessionId, e) => {
+    e.stopPropagation();
     
     if (sessions.length <= 1) {
-      // Don't allow deleting the last session
-      alert("You need to have at least one conversation.");
+      setError({ type: 'warning', message: 'You need to have at least one conversation.' });
       return;
     }
     
@@ -307,74 +376,91 @@ const ChatBox = () => {
     try {
       await api.delete(`${getApiUrl()}/sessions/${sessionId}`);
       
-      // Refresh sessions list
       const sessionsResponse = await api.get(`${getApiUrl()}/sessions`);
       setSessions(sessionsResponse.data);
       
-      // If the deleted session was the current one, switch to welcome screen
       if (sessionId === currentSessionId) {
-        setCurrentSessionId(null);
-        setMessages([initBotMsg()]);
+        if (sessionsResponse.data.length > 0) {
+          setCurrentSessionId(sessionsResponse.data[0].session_id);
+        } else {
+          setCurrentSessionId(null);
+          setMessages([initBotMsg()]);
+        }
       }
     } catch (error) {
       console.error("Error deleting session:", error);
-      alert("Failed to delete conversation. Please try again.");
+      setError({ type: 'server', message: 'Failed to delete conversation. Please try again.' });
     }
-  };
+  }, [sessions.length, currentSessionId]);
 
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     setIsDarkTheme(!isDarkTheme);
-  };
+  }, [isDarkTheme]);
 
-  const toggleSidebar = () => {
+  const toggleSidebar = useCallback(() => {
     setIsSidebarOpen(!isSidebarOpen);
-  };
+  }, [isSidebarOpen]);
 
-  const closeSidebar = () => {
+  const closeSidebar = useCallback(() => {
     setIsSidebarOpen(false);
-  };
+  }, []);
 
-  const handleResourceClick = (resource) => {
+  const handleResourceClick = useCallback((resource) => {
     setActiveResource(resource);
-    // Close sidebar on mobile
     if (window.innerWidth < 968) {
       setIsSidebarOpen(false);
     }
-  };
+  }, []);
 
-  const closeResourceModal = () => {
+  const closeResourceModal = useCallback(() => {
     setActiveResource(null);
-  };
+  }, []);
 
-  const formatTime = (date) => {
+  const formatTime = useCallback((date) => {
     return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+  }, []);
 
-  const handleSuggestionClick = (suggestion) => {
+  const handleSuggestionClick = useCallback((suggestion) => {
     handleSend(suggestion);
-  };
+  }, [handleSend]);
 
-  const handleLanguageSelect = (languageCode) => {
+  const handleLanguageSelect = useCallback((languageCode) => {
     setSelectedLanguage(languageCode);
     setShowLanguageDropdown(false);
-  };
+  }, []);
 
-  const toggleLanguageDropdown = () => {
+  const toggleLanguageDropdown = useCallback(() => {
     setShowLanguageDropdown(!showLanguageDropdown);
-  };
+  }, [showLanguageDropdown]);
 
-  const getCurrentLanguage = () => {
+  const getCurrentLanguage = useCallback(() => {
     return INDIAN_LANGUAGES.find(lang => lang.code === selectedLanguage) || INDIAN_LANGUAGES[0];
-  };
+  }, [selectedLanguage]);
 
-  // Function to render HTML content safely
-  const createMarkup = (htmlContent) => {
-    return { __html: htmlContent };
-  };
-   
-  const handleLogout = () => {
-        logout(); // This will clear the token and the ProtectedRoute will redirect
-  };
+  const createMarkup = useCallback((htmlContent) => {
+    let content = htmlContent
+        .replace(/^(?:\* )|^(?:- )|^(?:\d+\. )/gm, (match) => {
+            return `\n${match}`;
+        })
+        .replace(/\n/g, '<br/>');
+
+    content = content
+        .replace(/<br\/>\s*<br\/>/g, '<br/>')
+        .replace(/^(<br\/>)+/g, '')
+        .replace(/(<br\/>)+$/g, '');
+
+    return { __html: content };
+  }, []);
+
+  const handleLogout = useCallback(() => {
+    logout();
+  }, [logout]);
+
+  const clearError = useCallback(() => {
+    setError({ type: '', message: '' });
+  }, []);
+
+  const showWelcomeScreen = !currentSessionId || messages.length <= 1;
 
   return (
     <div className="chatbox-wrapper">
@@ -395,7 +481,11 @@ const ChatBox = () => {
       
       <div className="chatbox-container">
         <div className="chatbox-header">
-          <button className="menu-toggle" onClick={toggleSidebar}>
+          <button 
+            className="menu-toggle" 
+            onClick={toggleSidebar}
+            aria-label="Toggle sidebar"
+          >
             <span></span>
             <span></span>
             <span></span>
@@ -412,18 +502,19 @@ const ChatBox = () => {
           </div>
           
           <div className="chatbox-header-actions">
-            <div className="language-selector-container">
+            <div className="language-selector-container" ref={languageDropdownRef}>
               <button 
                 className="header-btn language-toggle" 
                 onClick={toggleLanguageDropdown}
                 title="Select language"
+                aria-label={`Current language: ${getCurrentLanguage().name}. Click to change language.`}
               >
                 <GlobeIcon />
                 <span>{getCurrentLanguage().code.toUpperCase()}</span>
               </button>
               
               {showLanguageDropdown && (
-                <div className="language-dropdown" ref={languageDropdownRef}>
+                <div className="language-dropdown">
                   <div className="language-dropdown-header">
                     <span>Select Language</span>
                   </div>
@@ -433,6 +524,10 @@ const ChatBox = () => {
                         key={language.code}
                         className={`language-option ${selectedLanguage === language.code ? 'selected' : ''}`}
                         onClick={() => handleLanguageSelect(language.code)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyPress={(e) => e.key === 'Enter' && handleLanguageSelect(language.code)}
+                        aria-label={`Select ${language.name}`}
                       >
                         <span className="language-name">{language.name}</span>
                         <span className="language-native">{language.nativeName}</span>
@@ -443,14 +538,31 @@ const ChatBox = () => {
               )}
             </div>
             
-            <button className="header-btn theme-toggle" onClick={toggleTheme}>
+            <button 
+              className="header-btn theme-toggle" 
+              onClick={toggleTheme}
+              aria-label={isDarkTheme ? "Switch to light theme" : "Switch to dark theme"}
+            >
               {isDarkTheme ? '☀️' : '🌙'}
             </button>
           </div>
         </div>
+
+        {/* Error Banner */}
+        {error.message && (
+          <div className={`error-banner ${error.type}`} role="alert">
+            <span>{error.message}</span>
+            <button 
+              onClick={clearError}
+              aria-label="Dismiss error message"
+            >
+              ×
+            </button>
+          </div>
+        )}
         
         <div className="chatbox-messages">
-          {(!currentSessionId || messages.length <= 1) && (
+          {showWelcomeScreen && (
             <div className="welcome-message">
               <div className="welcome-icon">⚖️</div>
               <h3>Justice Department Assistant</h3>
@@ -461,6 +573,7 @@ const ChatBox = () => {
                     key={index}
                     className="suggestion-bubble"
                     onClick={() => handleSuggestionClick(suggestion)}
+                    aria-label={`Ask: ${suggestion}`}
                   >
                     {suggestion}
                   </button>
@@ -470,26 +583,29 @@ const ChatBox = () => {
           )}
           
           {messages.map((msg) => (
-            <div key={msg.id} className={`chatbox-message-row ${msg.sender}`}>
-              <div className="chatbox-message-avatar">
-                {msg.sender === "user" ? <UserIcon /> : <JusticeIcon />}
-              </div>
-              <div className={`chatbox-message-content ${msg.sender}`}>
-                <div className="chatbox-message-bubble">
-                  <div className="chatbox-message-text" dangerouslySetInnerHTML={createMarkup(
-                    msg.text.split("\n").map(line => line.trim() ? line : '<br/>').join('')
-                  )} />
-                  <span className="chatbox-message-time">
-                    {formatTime(msg.timestamp)}
-                  </span>
+            (currentSessionId || msg.sender === 'bot' || !showWelcomeScreen) && (
+                <div key={msg.id} className={`chatbox-message-row ${msg.sender}`}>
+                <div className="chatbox-message-avatar">
+                    {msg.sender === "user" ? <UserIcon /> : <JusticeIcon />}
                 </div>
-                {msg.isError && (
-                  <div className="chatbox-message-error">
-                    Connection error
-                  </div>
-                )}
-              </div>
-            </div>
+                <div className={`chatbox-message-content ${msg.sender}`}>
+                    <div className="chatbox-message-bubble">
+                    <div 
+                      className="chatbox-message-text" 
+                      dangerouslySetInnerHTML={createMarkup(msg.text)} 
+                    />
+                    <span className="chatbox-message-time">
+                        {formatTime(msg.timestamp)}
+                    </span>
+                    </div>
+                    {msg.isError && (
+                    <div className="chatbox-message-error">
+                        Connection error
+                    </div>
+                    )}
+                </div>
+                </div>
+            )
           ))}
           
           {loading && (
@@ -498,10 +614,12 @@ const ChatBox = () => {
                 <JusticeIcon />
               </div>
               <div className="chatbox-message-content bot">
-                <div className="chatbox-message-bubble typing-indicator">
-                  <span></span>
-                  <span></span>
-                  <span></span>
+                <div className="chatbox-message-bubble">
+                  <div className="skeleton-message">
+                    <div className="skeleton-line short"></div>
+                    <div className="skeleton-line medium"></div>
+                    <div className="skeleton-line short"></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -519,21 +637,28 @@ const ChatBox = () => {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) handleSend(); }}
+              onKeyDown={(e) => { 
+                if (e.key === "Enter" && !e.shiftKey) { 
+                  e.preventDefault(); 
+                  handleSend(); 
+                } 
+              }}
               className="chatbox-input"
-              disabled={loading}
-              placeholder="Ask about legal information..."
+              disabled={loading || !isOnline}
+              placeholder={isOnline ? "Ask about legal information..." : "Offline - Check connection"}
+              aria-label="Type your message"
             />
-            <button 
+            <button
               className="chatbox-language-btn"
               onClick={toggleLanguageDropdown}
               title="Change language"
+              aria-label="Change language"
             >
               <GlobeIcon />
             </button>
             <button 
               onClick={() => handleSend()} 
-              disabled={loading || !input.trim()} 
+              disabled={loading || !input.trim() || !isOnline} 
               className="chatbox-send-btn"
               aria-label="Send message"
             >
@@ -541,7 +666,10 @@ const ChatBox = () => {
             </button>
           </div>
           <div className="chatbox-input-hint">
-            Try asking: "What are my rights?" or "How do I file a complaint?"
+            {isOnline 
+              ? "Try asking: 'What are my rights?' or 'How do I file a complaint?'"
+              : "You are currently offline. Please check your internet connection."
+            }
           </div>
         </div>
       </div>
@@ -554,4 +682,4 @@ const ChatBox = () => {
   );
 };
 
-export default ChatBox;
+export default React.memo(ChatBox);

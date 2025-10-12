@@ -1,16 +1,17 @@
 import React from 'react';
 import { useAuth } from './AuthContext';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 
 const ProtectedRoute = ({ children }) => {
     const { token } = useAuth();
+    const location = useLocation();
 
     if (!token) {
-        // If no token, redirect to the login page
-        return <Navigate to="/login" />;
+        // Redirect to login page with return url
+        return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    return children; // If token exists, render the component
+    return children;
 };
 
 export default ProtectedRoute;

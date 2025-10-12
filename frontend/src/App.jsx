@@ -5,12 +5,15 @@ import LoginPage from './LoginPage.jsx';
 import SignUpPage from './SignUpPage.jsx';
 import ChatBox from './components/ChatBox.jsx';
 import ProtectedRoute from './ProtectedRoute.jsx';
+import LandingPage from './LandingPage.jsx'; // Make sure this import is correct
+import './App.css';
 
 function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignUpPage />} />
           <Route 
@@ -21,8 +24,8 @@ function App() {
               </ProtectedRoute>
             } 
           />
-          {/* Redirect root path to /chat */}
-          <Route path="/" element={<Navigate to="/chat" />} />
+          {/* Redirect any unknown routes to home */}
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Router>
     </AuthProvider>

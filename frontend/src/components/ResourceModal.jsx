@@ -188,7 +188,7 @@ const ResourceModal = ({ resourceType, onClose }) => {
   return (
     <div className="resource-modal-overlay" onClick={onClose}>
       <div className="resource-modal" onClick={e => e.stopPropagation()}>
-        <button className="resource-modal-close" onClick={onClose}>
+        <button className="resource-modal-close" onClick={onClose} aria-label="Close modal">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
